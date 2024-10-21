@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/jkanban@1.2.0/dist/jkanban.min.css" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://unpkg.com/jkanban@1.2.0/dist/jkanban.min.js"></script>
+
+    <title>リアルタイムタスク管理アプリ</title>
+</head>
+
+<body>
+    <div id="myKanban"></div>
+
+    <!-- タスクを追加するためのフォーム -->
+    <input type="text" id="taskInput" placeholder="New Task">
+    <button id="addTaskButton">Add Task</button>
+    <script>
+        let kanban = new jKanban({ // ライブラリの初期化コード
+            element: '#myKanban', // どこに看板ボードを表示するかを設定 id=myKanbanに設定
+            boards: [ // 3つの看板ボードを設定
+                {
+                    'id': '_todo',
+                    'title': 'To Do',
+                    'class': 'info'
+                },
+                {
+                    'id': '_inprogress',
+                    'title': 'In Progress',
+                    'class': 'warning'
+                },
+                {
+                    'id': '_done',
+                    'title': 'Done',
+                    'class': 'success'
+                }
+            ]
+        });
+
+        // JQueryでボタンにイベントを追加
+        $("#addTaskButton").on("click", function () {
+            let taskTitle = $('#taskInput').val().trim(); // trim()は前後の余白を削除する。
+
+            if (taskTitle === "") {
+                alert("タスクタイトルは未入力にできません");
+                return;
+            }
+            kanban.addElement('_todo', {
+                'title': taskTitle
+            });
+
+            saveTasks();
+            $('#taskInput').val('');
+        });
+
+        // localStorageに保存
+        function saveTasks() {
+            let boards = kanban.getBoards(); // Boardsに設定されている値を全て取得する。
+            localStorage.setItem('kanbanData', JSON.stringify(boards)); // Boardsに入っていた値をJSON形式にして、keyをkanbanDataとして保存。
+        };
+
+        // ローカルストレージからタスクをロードする
+        function loadTasks() {
+            let savedData = localStorage.getItem('kanbanData'); // kanbanDataをlocalStorageから取得
+            if (savedData) {
+                let boards = JSON.parse(savedData);  // JSON形式からJavaScriptオブジェクトに変換して、boardsに格納
+                boards.forEach(function (board) { // boardsのアイテムをboard変数に入れ込む
+                    kanban.addBoard({ // kanbanに内容を復元
+                        'id': board.id,
+                        'title': board.title,
+                        'class': board.class
+                    });
+
+                    // ボードにアイテムを追加
+                    board.item.forEach(function (item) {
+                        kanban.addElement(board.id, { 'title': item.title });
+                    });
+                });
+            }
+        };
+
+        // ロード時にタスクを読み込む
+        $(document).ready(function () {
+            loadTasks();
+        });
+    </script>
+</body>
+
+</html>
